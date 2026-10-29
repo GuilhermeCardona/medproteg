@@ -124,12 +124,17 @@
                     <form id="uploadForm">
                         <div class="mb-3">
                             <label for="documentFile" class="form-label">Selecionar Arquivo</label>
-                            <input type="file" class="form-control" id="documentFile" accept=".pdf,.doc,.docx,.txt" multiple required aria-describedby="fileHelp">
-                            <div id="fileHelp" class="form-text">Suportados: PDF, DOC, DOCX, TXT. Anonimize dados sensíveis antes do envio.</div>
+                            <input type="file" class="form-control" id="documentFile" accept=".txt" aria-describedby="fileHelp">
+                            <div id="fileHelp" class="form-text">Por enquanto, apenas .txt (PDF está nos próximos passos).</div>
                         </div>
                         <div class="mb-3">
                             <label for="documentDescription" class="form-label">Descrição</label>
-                            <textarea class="form-control" id="documentDescription" rows="3" placeholder="Descreva o documento (ex.: Contrato de prestação de serviços médicos)" required></textarea>
+                            <textarea class="form-control" id="documentDescription" rows="2" placeholder="Descreva o documento (ex.: Contrato de prestação de serviços médicos)"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="documentText" class="form-label">Texto do documento</label>
+                            <textarea class="form-control" id="documentText" rows="6" placeholder="Cole o texto aqui ou selecione um arquivo .txt acima"></textarea>
+                            <div class="form-text">Dados pessoais (CPF, telefone, e-mail, nomes...) são pseudonimizados no servidor antes de o texto ir para a IA.</div>
                         </div>
                         <div class="mb-3">
                             <label for="priority" class="form-label">Prioridade</label>
@@ -139,8 +144,9 @@
                                 <option value="alta">Alta</option>
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-success">Enviar para Análise</button>
+                        <button type="submit" class="btn btn-success" id="submitBtn">Enviar para Análise</button>
                     </form>
+                    <div id="analysisResult" class="mt-4"></div>
                     <hr>
                     <h5>Documentos Enviados</h5>
                     <ul class="list-group" id="documentList">
@@ -283,6 +289,72 @@
             chatInput.value = '';
             chatMessages.scrollTop = chatMessages.scrollHeight;
         });
+
+        // Análise de documentos com IA (API em /server)
+        const API_URL = 'http://localhost:3000';
+        const corGravidade = { baixa: 'secondary', media: 'warning', alta: 'danger' };
+        const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+        document.getElementById('documentFile').addEventListener('change', async (e) => {
+            const arquivo = e.target.files[0];
+            if (arquivo) document.getElementById('documentText').value = await arquivo.text();
+        });
+
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const texto = document.getElementById('documentText').value;
+            const descricao = document.getElementById('documentDescription').value;
+            const resultado = document.getElementById('analysisResult');
+            const botao = document.getElementById('submitBtn');
+            if (!texto.trim()) {
+                resultado.innerHTML = '<div class="alert alert-warning">Cole o texto ou selecione um arquivo .txt.</div>';
+                return;
+            }
+
+            botao.disabled = true;
+            botao.textContent = 'Analisando...';
+            try {
+                const resposta = await fetch(`${API_URL}/analisar`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ texto, descricao })
+                });
+                const dados = await resposta.json();
+                if (!resposta.ok) throw new Error(dados.erro);
+                resultado.innerHTML = renderizarAnalise(dados);
+            } catch (erro) {
+                resultado.innerHTML = `<div class="alert alert-danger">Não foi possível analisar: ${escapar(erro.message)}. A API está rodando? (veja o README)</div>`;
+            } finally {
+                botao.disabled = false;
+                botao.textContent = 'Enviar para Análise';
+            }
+        });
+
+        function renderizarAnalise({ analise, dadosPessoais }) {
+            const pii = Object.entries(dadosPessoais.contagem).map(([tipo, n]) => `${tipo}: ${n}`).join(' · ') || 'nenhum';
+            const riscos = analise.riscos.map((r) => `
+                <li class="list-group-item">
+                    <span class="badge bg-${corGravidade[r.gravidade]} me-2">${escapar(r.gravidade)}</span>
+                    <strong>${escapar(r.categoria.toUpperCase())}</strong> ${escapar(r.descricao)}
+                    ${r.fundamento ? `<div class="small text-muted">${escapar(r.fundamento)}</div>` : ''}
+                </li>`).join('') || '<li class="list-group-item">Nenhum risco relevante encontrado.</li>';
+            const recomendacoes = analise.recomendacoes.map((r) => `<li>${escapar(r)}</li>`).join('');
+            return `
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between">
+                        <span><i class="fas fa-robot"></i> ${escapar(analise.tipoDocumento)}</span>
+                        <span>Score: <strong>${analise.score}</strong>/100</span>
+                    </div>
+                    <div class="card-body">
+                        <p>${escapar(analise.resumo)}</p>
+                        <p class="small text-muted">Dados pessoais pseudonimizados antes do envio: ${escapar(pii)}
+                            ${analise.contemDadosSensiveis ? ' · <span class="text-danger">contém dado sensível (saúde)</span>' : ''}</p>
+                        <h6>Riscos</h6>
+                        <ul class="list-group mb-3">${riscos}</ul>
+                        ${recomendacoes ? `<h6>Recomendações</h6><ul>${recomendacoes}</ul>` : ''}
+                    </div>
+                </div>`;
+        }
     </script>
 </body>
 </html>

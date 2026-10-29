@@ -1,114 +1,94 @@
-# Medproteg — Protótipo de Dashboard LGPD para Hospital
+# MedProteg
 
-## 1. Nome do Projeto
-**Medproteg — Protótipo de Dashboard LGPD para Hospital**
+Plataforma de compliance e LGPD para hospitais. Começou como projeto interdisciplinar com estudantes de Direito (disciplina Direito, Inovação e Empreendedorismo, PUCRS) e hoje tem três partes:
 
-## 2. Tipo do Projeto
-Protótipo acadêmico (faculdade) de interface web para simular um software de compliance jurídico e proteção de dados (LGPD) em ambiente hospitalar.
+- **Painel do cliente** (`Medproteg.html`): dashboard com score de conformidade, riscos, alertas e envio de documentos.
+- **API de análise com IA** (`server/`): recebe o texto de um documento, tira os dados pessoais e pede para um LLM apontar riscos de LGPD.
+- **Página de vendas**: repositório separado, [medproteg-landing](https://github.com/GuilhermeCardona/medproteg-landing).
 
-## 3. Problema que o Projeto Resolve
-Hospitais lidam com dados pessoais sensíveis (ex.: prontuários médicos) e precisam atender exigências legais da LGPD.
+## Como a análise funciona
 
-O protótipo demonstra, de forma visual, como centralizar monitoramento de conformidade, riscos e ações de compliance.
-
-## 4. Objetivo do Protótipo
-- Simular um painel de governança de dados para saúde.
-- Exibir indicadores de conformidade.
-- Apoiar análise de risco jurídico/cibernético.
-- Simular envio de documentos para revisão de compliance.
-- Oferecer assistente básico de dúvidas sobre LGPD.
-
-## 5. Público-alvo
-- Equipe jurídica/compliance hospitalar
-- Gestão hospitalar
-- TI e segurança da informação
-- Contexto acadêmico para demonstração de conceito
-
-## 6. Escopo Funcional (O que o protótipo faz)
-
-### 6.1 Dashboard
-- Exibe score de compliance (85%) em gráfico tipo gauge.
-- Mostra resumo de atividades (relatórios e auditorias).
-
-### 6.2 Módulo de Compliance Jurídico
-- Card com contexto de LGPD no tratamento de dados.
-- Destaque de dados sensíveis e aderência de conformidade.
-- Gráfico de riscos por categoria (LGPD, sanitárias, contratuais, cibernéticas).
-
-### 6.3 Envio de Documentos
-- Formulário de upload (simulado) para documentos de análise.
-- Campos de descrição e prioridade.
-- Lista de documentos com status.
-
-### 6.4 Relatórios
-- Gráfico de evolução mensal de conformidade (%).
-
-### 6.5 Alertas
-- Alertas de risco (ex.: possível vazamento de dados, auditoria pendente).
-
-### 6.6 Chatbot LGPD (simulado)
-Bot flutuante com respostas por palavra-chave:
-- `lgpd`
-- `anonimizar`
-- `consentimento`
-- `dados sensíveis`
-
-## 7. Tecnologias do Protótipo
-- HTML5
-- CSS3
-- JavaScript (Vanilla)
-- Bootstrap 5.3 (CDN)
-- Font Awesome 6 (CDN)
-- Chart.js (CDN)
-
-## 8. Estrutura Atual
-Projeto em arquivo único:
-
-```bash
-Medproteg.html
+```
+texto do documento
+   │
+   ▼
+pseudonimização (server/src/pii.ts)     CPF, CNS, telefone, e-mail, CEP, nomes → [CPF_1], [NOME_1]...
+   │                                    códigos CID marcam o documento como dado de saúde
+   ▼
+LLM (server/src/llm.ts)                 Gemini via API REST, resposta em JSON
+   │
+   ▼
+validação (server/src/schema.ts)        Zod confere o formato; se vier errado, o modelo recebe o erro e tenta de novo
+   │
+   ▼
+painel                                  score, riscos por gravidade e recomendações
 ```
 
-## 9. Como Executar
-1. Abra o arquivo `Medproteg.html` no navegador.
-2. Recomenda-se internet ativa para carregar bibliotecas via CDN.
+O ponto principal: **o modelo nunca recebe o dado real do paciente.** A detecção roda no servidor antes da chamada (princípio da necessidade, art. 6º, III, da LGPD). O texto do documento também não vai para os logs.
 
-## 10. Requisitos Não Funcionais (Protótipo)
-- Interface responsiva básica.
-- Navegação por seções.
-- Visual moderno para apresentação acadêmica.
-- Acessibilidade parcial (uso de `aria-label` em alguns elementos).
+Algumas decisões:
 
-## 11. Limitações do Protótipo
-- Sem backend (dados não persistem).
-- Upload não envia arquivo de fato.
-- Sem autenticação/autorização.
-- Sem criptografia real.
-- Sem trilha de auditoria persistente.
-- Chatbot simples, sem IA avançada.
+- O CPF só é mascarado se os dígitos verificadores baterem, para não esconder números de protocolo.
+- O mesmo dado repetido recebe sempre o mesmo marcador, assim o modelo entende que é a mesma pessoa.
+- Se o texto tem código CID, o documento é marcado como sensível mesmo que o modelo diga o contrário: a regra local é determinística, o modelo não.
+- A camada do LLM é uma interface (`ProvedorLLM`). Trocar o Gemini por outro modelo é mexer em um arquivo só.
 
-## 12. Riscos e Pontos de Atenção (LGPD)
-Em ambiente real, seria obrigatório:
-- base legal para tratamento de dados;
-- controles de acesso por perfil;
-- anonimização/pseudonimização robusta;
-- registro de consentimento e finalidade;
-- logs e governança de incidentes.
+## Rodando
 
-## 13. Evolução Recomendada (Próximas Versões)
-- Backend + banco de dados.
-- Controle de usuários/perfis (jurídico, DPO, TI, gestão).
-- Fluxo real de auditoria documental.
-- Exportação de relatórios (PDF/Excel).
-- Chatbot com NLP/IA.
-- Integrações com sistemas hospitalares.
+Requisitos: Node.js 20+.
 
-## 14. Valor Acadêmico
-O protótipo permite demonstrar integração entre:
-- legislação (LGPD),
-- usabilidade,
-- visualização de indicadores,
-- e noções de arquitetura de software aplicada ao setor de saúde.
+```bash
+cd server
+npm install
+cp .env.example .env     # coloque sua GEMINI_API_KEY (gratuita em https://aistudio.google.com/apikey)
+npm run dev              # API em http://localhost:3000
+```
 
-## 15. Status
-- **Versão:** Protótipo funcional de interface  
-- **Finalidade:** Demonstração acadêmica
+Sem chave, o servidor roda em **modo mock**: monta uma análise simples a partir dos dados detectados, sem IA. Serve para testar o fluxo inteiro.
+
+Depois abra o `Medproteg.html` no navegador, vá em "Envio de Documentos" e cole um texto (há exemplos fictícios em `server/evals/documentos/`).
+
+### Exemplo de chamada
+
+```bash
+curl -X POST http://localhost:3000/analisar \
+  -H "Content-Type: application/json" \
+  -d '{"texto": "Paciente: Roberto Almeida Costa\nCPF: 529.982.247-25\nDiagnóstico: CID J44.1"}'
+```
+
+## Testes e avaliação
+
+```bash
+npm test         # testes unitários (pseudonimização, validação, novas tentativas)
+npm run evals    # roda o analisador nos documentos fictícios e compara com o esperado
+```
+
+Os testes conferem o código. As avaliações (`server/evals/`) conferem o comportamento do modelo: cada documento tem o resultado esperado em `esperado.json` (se tem dado sensível, quais riscos precisam aparecer, faixa de score). Sempre que o prompt muda, rodo as avaliações de novo.
+
+## Estrutura
+
+```
+Medproteg.html          painel (HTML, CSS, JS, Bootstrap, Chart.js)
+server/
+  src/
+    index.ts            API Express (GET /health, POST /analisar)
+    pii.ts              detecção e pseudonimização de dados pessoais
+    prompt.ts           prompt do sistema
+    llm.ts              provedores: Gemini e mock
+    schema.ts           formato da resposta (Zod)
+    analyzer.ts         junta tudo: pseudonimiza, chama o modelo, valida, tenta de novo
+    evals.ts            script de avaliação
+  tests/                testes com node:test
+  evals/                documentos fictícios e resultados esperados
+```
+
+## Próximos passos
+
+- Ler PDF e DOCX direto (hoje aceita texto e `.txt`).
+- Detectar nomes sem rótulo com um modelo de NER.
+- Guardar o histórico de análises em banco de dados.
+- Trocar o chatbot por palavra-chave do painel por respostas com IA.
+
+## Limitações
+
+Protótipo acadêmico. Não substitui revisão jurídica, não tem autenticação e os dados do painel são fictícios. A detecção de dados pessoais por regex não pega tudo, por isso a análise do modelo é um apoio e não uma garantia.
