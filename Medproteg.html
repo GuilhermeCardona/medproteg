@@ -1,360 +1,445 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Medproteg - Hospital São Lucas</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; }
-        .sidebar { background-color: #007bff; color: white; min-height: 100vh; position: fixed; width: 250px; transition: width 0.3s; }
-        .sidebar.collapsed { width: 70px; }
-        .sidebar a { color: white; text-decoration: none; display: block; padding: 15px; }
-        .sidebar a:hover { background-color: #0056b3; }
-        .main-content { margin-left: 250px; padding: 20px; transition: margin-left 0.3s; }
-        .main-content.expanded { margin-left: 70px; }
-        .card { border: none; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
-        .gauge-container { position: relative; width: 200px; height: 200px; margin: 0 auto; }
-        .alert-custom { background-color: #fff3cd; border-color: #ffeaa7; color: #856404; }
-        .compliance-section { background-color: #e7f3ff; padding: 20px; border-radius: 10px; }
-        .chatbot { position: fixed; bottom: 20px; right: 20px; width: 300px; height: 400px; background: white; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.2); display: none; z-index: 1000; }
-        .chatbot-header { background: #007bff; color: white; padding: 10px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
-        .chat-messages { height: 300px; overflow-y: auto; padding: 10px; }
-        .chat-input { padding: 10px; border-top: 1px solid #ddd; }
-        .fab { position: fixed; bottom: 20px; right: 20px; background: #007bff; color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 20px; z-index: 1001; }
-        @media (max-width: 768px) { .sidebar { width: 100%; position: relative; } .main-content { margin-left: 0; } .chatbot { width: 90%; right: 5%; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MedProteg · Painel de conformidade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --fundo: #f5f7f6;
+    --card: #ffffff;
+    --borda: #e3e8e6;
+    --texto: #16211f;
+    --texto-2: #5c6b67;
+    --verde: #0f6b5c;
+    --verde-claro: #e4f1ee;
+    --alerta: #b7791f;
+    --alerta-claro: #fdf3e1;
+    --risco: #b42318;
+    --risco-claro: #fdecea;
+    --raio: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font: 15px/1.55 "Manrope", system-ui, sans-serif; color: var(--texto); background: var(--fundo); }
+  a { color: inherit; text-decoration: none; }
+
+  /* layout */
+  .app { display: grid; grid-template-columns: 232px 1fr; min-height: 100vh; }
+  aside {
+    background: var(--card); border-right: 1px solid var(--borda);
+    padding: 22px 14px; position: sticky; top: 0; height: 100vh; align-self: start;
+  }
+  .marca { display: flex; align-items: center; gap: 10px; padding: 0 10px 26px; font-weight: 700; font-size: 17px; }
+  .marca i { color: var(--verde); font-size: 20px; }
+  aside nav a {
+    display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px;
+    color: var(--texto-2); font-weight: 500; margin-bottom: 2px;
+  }
+  aside nav a i { width: 18px; text-align: center; }
+  aside nav a:hover { background: var(--fundo); color: var(--texto); }
+  aside nav a.ativo { background: var(--verde-claro); color: var(--verde); font-weight: 600; }
+  .rodape-lateral { position: absolute; bottom: 22px; left: 24px; right: 24px; font-size: 12px; color: var(--texto-2); }
+
+  main { padding: 32px 40px 64px; max-width: 1180px; }
+  header.topo { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; margin-bottom: 28px; }
+  .cliente { font-size: 13px; color: var(--texto-2); font-weight: 500; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -.01em; margin-top: 2px; }
+  .selo { font-size: 12px; color: var(--texto-2); background: var(--card); border: 1px solid var(--borda); border-radius: 999px; padding: 6px 12px; white-space: nowrap; }
+
+  section { margin-bottom: 36px; scroll-margin-top: 20px; }
+  h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .sub { color: var(--texto-2); font-size: 14px; margin-bottom: 16px; }
+
+  .card { background: var(--card); border: 1px solid var(--borda); border-radius: var(--raio); padding: 22px; }
+  .grade { display: grid; gap: 16px; }
+  .g4 { grid-template-columns: 1.3fr 1fr 1fr 1fr; }
+  .g2 { grid-template-columns: 1fr 1fr; }
+  .g-analise { grid-template-columns: 1fr 1.15fr; align-items: start; }
+
+  /* indicadores */
+  .kpi .rotulo { font-size: 13px; color: var(--texto-2); font-weight: 500; }
+  .kpi .valor { font-size: 30px; font-weight: 700; margin-top: 6px; letter-spacing: -.02em; }
+  .kpi .nota { font-size: 13px; color: var(--texto-2); }
+  .score { display: flex; align-items: center; gap: 18px; }
+  .score .anel { width: 92px; height: 92px; position: relative; flex: none; }
+  .score .anel span { position: absolute; inset: 0; display: grid; place-items: center; font-weight: 700; font-size: 20px; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 8px; }
+  .tag.ok { background: var(--verde-claro); color: var(--verde); }
+  .tag.media { background: var(--alerta-claro); color: var(--alerta); }
+  .tag.alta { background: var(--risco-claro); color: var(--risco); }
+  .tag.baixa { background: var(--fundo); color: var(--texto-2); }
+
+  .lista-simples { list-style: none; }
+  .lista-simples li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--borda); font-size: 14px; }
+  .lista-simples li:last-child { border-bottom: none; }
+
+  /* formulário */
+  label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+  .ajuda { font-size: 12.5px; color: var(--texto-2); margin-top: 6px; }
+  .campo { margin-bottom: 18px; }
+  input[type=file], textarea, select {
+    width: 100%; font: inherit; color: inherit; background: var(--fundo);
+    border: 1px solid var(--borda); border-radius: 8px; padding: 10px 12px;
+  }
+  textarea { resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--verde); outline-offset: 1px; background: var(--card); }
+  .linha { display: grid; grid-template-columns: 1fr 140px; gap: 12px; }
+  .botao {
+    display: inline-flex; align-items: center; gap: 8px; font: inherit; font-weight: 600;
+    background: var(--verde); color: #fff; border: none; border-radius: 8px; padding: 11px 18px; cursor: pointer;
+  }
+  .botao:hover { background: #0b5549; }
+  .botao:disabled { opacity: .6; cursor: wait; }
+  .privacidade { display: flex; gap: 10px; align-items: flex-start; background: var(--verde-claro); color: var(--verde); border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 18px; }
+
+  /* resultado */
+  .vazio { text-align: center; color: var(--texto-2); padding: 48px 16px; }
+  .vazio i { font-size: 28px; color: var(--borda); margin-bottom: 10px; display: block; }
+  .res-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 12px; }
+  .res-topo h3 { font-size: 17px; }
+  .res-score { text-align: right; }
+  .res-score b { font-size: 28px; }
+  .pii { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 18px; }
+  .pii span { font-size: 12px; background: var(--fundo); border: 1px solid var(--borda); border-radius: 6px; padding: 2px 8px; }
+  .risco { border-left: 3px solid var(--borda); padding: 8px 0 8px 12px; margin-bottom: 10px; }
+  .risco.alta { border-color: var(--risco); }
+  .risco.media { border-color: var(--alerta); }
+  .risco .cab { display: flex; gap: 8px; align-items: center; font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+  .risco .fund { font-size: 12.5px; color: var(--texto-2); }
+  h4 { font-size: 14px; margin: 18px 0 8px; }
+  .recs { padding-left: 18px; }
+  .recs li { margin-bottom: 4px; }
+  .erro { background: var(--risco-claro); color: var(--risco); border-radius: 8px; padding: 12px 14px; font-size: 14px; }
+
+  /* alertas */
+  .alerta { display: flex; gap: 12px; align-items: flex-start; padding: 14px 16px; border-radius: var(--raio); margin-bottom: 10px; font-size: 14px; }
+  .alerta i { margin-top: 3px; }
+  .alerta.media { background: var(--alerta-claro); color: #7a4f10; }
+  .alerta.alta { background: var(--risco-claro); color: var(--risco); }
+
+  /* chatbot */
+  .fab { position: fixed; right: 24px; bottom: 24px; width: 54px; height: 54px; border-radius: 50%; border: none; background: var(--verde); color: #fff; font-size: 20px; cursor: pointer; box-shadow: 0 6px 20px rgba(15, 107, 92, .3); }
+  .chatbot { position: fixed; right: 24px; bottom: 90px; width: 330px; max-height: 460px; display: none; flex-direction: column; background: var(--card); border: 1px solid var(--borda); border-radius: 14px; box-shadow: 0 12px 40px rgba(0,0,0,.12); overflow: hidden; z-index: 20; }
+  .chatbot.aberto { display: flex; }
+  .chat-topo { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--borda); font-weight: 600; }
+  .chat-topo button { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--texto-2); }
+  .chat-msgs { padding: 14px 16px; overflow-y: auto; flex: 1; font-size: 14px; }
+  .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; max-width: 88%; }
+  .msg.bot { background: var(--fundo); }
+  .msg.eu { background: var(--verde-claro); margin-left: auto; }
+  .chat-entrada { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--borda); }
+  .chat-entrada input { flex: 1; font: inherit; border: 1px solid var(--borda); border-radius: 8px; padding: 8px 10px; background: var(--fundo); }
+  .chat-entrada .botao { padding: 8px 12px; }
+
+  @media (max-width: 960px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: static; height: auto; padding: 14px; }
+    aside nav { display: flex; overflow-x: auto; gap: 4px; }
+    aside nav a { white-space: nowrap; }
+    .marca { padding-bottom: 12px; }
+    .rodape-lateral { display: none; }
+    main { padding: 24px 18px 80px; }
+    .g4, .g2, .g-analise { grid-template-columns: 1fr; }
+    header.topo { flex-direction: column; align-items: flex-start; }
+  }
+</style>
 </head>
 <body>
-    <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <div class="p-3">
-            <h4><i class="fas fa-shield-alt"></i> Medproteg</h4>
-            <button class="btn btn-light btn-sm mt-3" id="toggleSidebar"><i class="fas fa-bars"></i></button>
+<div class="app">
+
+  <aside>
+    <div class="marca"><i class="fa-solid fa-shield-halved"></i> MedProteg</div>
+    <nav>
+      <a href="#visao-geral" class="ativo"><i class="fa-solid fa-chart-pie"></i> Visão geral</a>
+      <a href="#envio-documentos"><i class="fa-solid fa-file-shield"></i> Análise de documentos</a>
+      <a href="#compliance"><i class="fa-solid fa-scale-balanced"></i> Compliance</a>
+      <a href="#relatorios"><i class="fa-solid fa-chart-line"></i> Relatórios</a>
+      <a href="#alertas"><i class="fa-solid fa-bell"></i> Alertas</a>
+    </nav>
+    <div class="rodape-lateral">Protótipo acadêmico · dados do painel são fictícios</div>
+  </aside>
+
+  <main>
+    <header class="topo">
+      <div>
+        <div class="cliente">Hospital São Lucas</div>
+        <h1>Painel de conformidade LGPD</h1>
+      </div>
+      <span class="selo"><i class="fa-regular fa-clock"></i> Atualizado hoje</span>
+    </header>
+
+    <!-- Visão geral -->
+    <section id="visao-geral">
+      <div class="grade g4">
+        <div class="card kpi score">
+          <div class="anel"><canvas id="complianceGauge" aria-label="Score de compliance: 85 de 100"></canvas><span>85</span></div>
+          <div>
+            <div class="rotulo">Score de compliance</div>
+            <span class="tag ok">Nível alto</span>
+            <div class="nota" style="margin-top:6px">Meta: 90</div>
+          </div>
         </div>
-        <nav>
-            <a href="#dashboard"><i class="fas fa-tachometer-alt"></i> <span>Dashboard</span></a>
-            <a href="#compliance"><i class="fas fa-gavel"></i> <span>Compliance Jurídico</span></a>
-            <a href="#envio-documentos"><i class="fas fa-upload"></i> <span>Envio de Documentos</span></a>
-            <a href="#auditorias"><i class="fas fa-search"></i> <span>Auditorias</span></a>
-            <a href="#relatorios"><i class="fas fa-chart-bar"></i> <span>Relatórios</span></a>
-            <a href="#alertas"><i class="fas fa-exclamation-triangle"></i> <span>Alertas</span></a>
-            <a href="#configuracoes"><i class="fas fa-cog"></i> <span>Configurações</span></a>
-        </nav>
-    </div>
-
-    <!-- Main Content -->
-    <div class="main-content" id="mainContent">
-        <header class="mb-4">
-            <h1><i class="fas fa-hospital"></i> Dashboard do Cliente - Hospital São Lucas</h1>
-            <p class="text-muted">Foco em segurança jurídica, LGPD e compliance hospitalar personalizado.</p>
-        </header>
-
-        <!-- Dashboard Overview -->
-        <section id="dashboard" class="mb-5">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card compliance-section">
-                        <div class="card-body text-center">
-                            <h5>Score de Compliance</h5>
-                            <div class="gauge-container">
-                                <canvas id="complianceGauge" aria-label="Score de Compliance: 85%"></canvas>
-                            </div>
-                            <p class="mt-2">85% - Nível Alto</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-8">
-                    <div class="card">
-                        <div class="card-header">Resumo de Atividades</div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-6">
-                                    <h6><i class="fas fa-file-alt"></i> Relatórios Gerados</h6>
-                                    <p>12 este mês</p>
-                                </div>
-                                <div class="col-6">
-                                    <h6><i class="fas fa-user-shield"></i> Auditorias Concluídas</h6>
-                                    <p>5 pendentes</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Compliance Jurídico -->
-        <section id="compliance" class="mb-5">
-            <h2><i class="fas fa-gavel"></i> Compliance Jurídico</h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">LGPD - Tratamento de Dados Pessoais</div>
-                        <div class="card-body">
-                            <p>Gestão de dados de pacientes: Consentimentos coletados, anonimização aplicada.</p>
-                            <ul>
-                                <li>Dados sensíveis: Prontuários médicos protegidos.</li>
-                                <li>Relatório de conformidade: 95% aderente.</li>
-                            </ul>
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#lgpdModal">Ver Detalhes</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">Riscos Hospitalares</div>
-                        <div class="card-body">
-                            <canvas id="riskChart" aria-label="Gráfico de Riscos"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Envio de Documentos para Análise de Compliance -->
-        <section id="envio-documentos" class="mb-5">
-            <h2><i class="fas fa-upload"></i> Envio de Documentos para Análise de Compliance</h2>
-            <div class="card">
-                <div class="card-header">Envie Documentos para Revisão Jurídica</div>
-                <div class="card-body">
-                    <p class="text-muted">Envie contratos, prontuários anonimizados ou relatórios para análise de conformidade com LGPD e normas hospitalares. Arquivos até 10MB.</p>
-                    <form id="uploadForm">
-                        <div class="mb-3">
-                            <label for="documentFile" class="form-label">Selecionar Arquivo</label>
-                            <input type="file" class="form-control" id="documentFile" accept=".txt" aria-describedby="fileHelp">
-                            <div id="fileHelp" class="form-text">Por enquanto, apenas .txt (PDF está nos próximos passos).</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="documentDescription" class="form-label">Descrição</label>
-                            <textarea class="form-control" id="documentDescription" rows="2" placeholder="Descreva o documento (ex.: Contrato de prestação de serviços médicos)"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="documentText" class="form-label">Texto do documento</label>
-                            <textarea class="form-control" id="documentText" rows="6" placeholder="Cole o texto aqui ou selecione um arquivo .txt acima"></textarea>
-                            <div class="form-text">Dados pessoais (CPF, telefone, e-mail, nomes...) são pseudonimizados no servidor antes de o texto ir para a IA.</div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="priority" class="form-label">Prioridade</label>
-                            <select class="form-select" id="priority">
-                                <option value="baixa">Baixa</option>
-                                <option value="media">Média</option>
-                                <option value="alta">Alta</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn btn-success" id="submitBtn">Enviar para Análise</button>
-                    </form>
-                    <div id="analysisResult" class="mt-4"></div>
-                    <hr>
-                    <h5>Documentos Enviados</h5>
-                    <ul class="list-group" id="documentList">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Contrato_Hospital_2023.pdf <span class="badge bg-warning">Em Análise</span>
-                        </li>
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            Prontuario_Anonimizado.docx <span class="badge bg-success">Aprovado</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </section>
-
-        <!-- Relatórios -->
-        <section id="relatorios" class="mb-5">
-            <h2><i class="fas fa-chart-bar"></i> Relatórios</h2>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="card">
-                        <div class="card-header">Relatórios Mensais de Compliance</div>
-                        <div class="card-body">
-                            <canvas id="monthlyReportChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Alertas -->
-        <section id="alertas" class="mb-5">
-            <h2><i class="fas fa-exclamation-triangle"></i> Alertas</h2>
-            <div class="alert alert-custom">
-                <strong>Atenção:</strong> Possível vazamento de dados em prontuários médicos. Verifique conformidade com LGPD.
-            </div>
-            <div class="alert alert-danger">
-                <strong>Risco Alto:</strong> Auditoria pendente para segurança jurídica em contratos hospitalares.
-            </div>
-        </section>
-    </div>
-
-    <!-- Botão Flutuante -->
-    <button class="fab" id="fabBtn"><i class="fas fa-robot"></i></button>
-
-    <!-- Chatbot -->
-    <div class="chatbot" id="chatbot">
-        <div class="chatbot-header">
-            <h5><i class="fas fa-robot"></i> Bot LGPD 24h</h5>
-            <button class="btn-close btn-close-white" id="closeChatbot"></button>
+        <div class="card kpi">
+          <div class="rotulo">Relatórios no mês</div>
+          <div class="valor">12</div>
+          <div class="nota">3 a mais que setembro</div>
         </div>
-        <div class="chat-messages" id="chatMessages">
-            <p><strong>Bot:</strong> Olá! Sou o assistente LGPD. Pergunte-me algo!</p>
+        <div class="card kpi">
+          <div class="rotulo">Auditorias pendentes</div>
+          <div class="valor">5</div>
+          <div class="nota">2 com prazo esta semana</div>
         </div>
-        <div class="chat-input">
-            <input type="text" class="form-control" id="chatInput" placeholder="Digite sua pergunta...">
-            <button class="btn btn-primary mt-2" id="sendBtn">Enviar</button>
+        <div class="card kpi">
+          <div class="rotulo">Alertas abertos</div>
+          <div class="valor" style="color:var(--risco)">2</div>
+          <div class="nota">1 de risco alto</div>
         </div>
-    </div>
+      </div>
+    </section>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Toggle Sidebar
-        document.getElementById('toggleSidebar').addEventListener('click', () => {
-            document.getElementById('sidebar').classList.toggle('collapsed');
-            document.getElementById('mainContent').classList.toggle('expanded');
-        });
+    <!-- Análise de documentos -->
+    <section id="envio-documentos">
+      <h2>Análise de documentos com IA</h2>
+      <p class="sub">Envie um contrato, prontuário ou termo e receba os riscos de LGPD em segundos.</p>
+      <div class="grade g-analise">
+        <div class="card">
+          <form id="uploadForm">
+            <div class="privacidade"><i class="fa-solid fa-lock"></i><span>CPF, Cartão SUS, telefones, e-mails e nomes são trocados por marcadores no servidor antes de o texto ir para a IA.</span></div>
+            <div class="campo">
+              <label for="documentFile">Arquivo</label>
+              <input type="file" id="documentFile" accept=".txt">
+              <div class="ajuda">Por enquanto, apenas .txt. Ou cole o texto abaixo.</div>
+            </div>
+            <div class="campo">
+              <label for="documentText">Texto do documento</label>
+              <textarea id="documentText" rows="8" placeholder="Cole aqui o conteúdo do documento"></textarea>
+            </div>
+            <div class="linha campo">
+              <div>
+                <label for="documentDescription">Descrição</label>
+                <textarea id="documentDescription" rows="1" placeholder="Ex.: contrato com laboratório"></textarea>
+              </div>
+              <div>
+                <label for="priority">Prioridade</label>
+                <select id="priority">
+                  <option value="baixa">Baixa</option>
+                  <option value="media" selected>Média</option>
+                  <option value="alta">Alta</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="botao" id="submitBtn"><i class="fa-solid fa-wand-magic-sparkles"></i> Analisar documento</button>
+          </form>
+        </div>
 
-        // Gauge Chart (Compliance)
-        new Chart(document.getElementById('complianceGauge'), {
-            type: 'doughnut',
-            data: {
-                datasets: [{
-                    data: [85, 15],
-                    backgroundColor: ['#28a745', '#e9ecef'],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                cutout: '70%',
-                plugins: { legend: { display: false }, tooltip: { enabled: false } }
-            }
-        });
+        <div class="card" id="analysisResult">
+          <div class="vazio"><i class="fa-regular fa-file-lines"></i>O resultado da análise aparece aqui.</div>
+        </div>
+      </div>
 
-        // Risk Chart
-        new Chart(document.getElementById('riskChart'), {
-            type: 'bar',
-            data: {
-                labels: ['LGPD', 'Sanitárias', 'Contratuais', 'Cibernéticas'],
-                datasets: [{
-                    label: 'Nível de Risco',
-                    data: [3, 2, 4, 5],
-                    backgroundColor: ['#ffc107', '#17a2b8', '#28a745', '#dc3545']
-                }]
-            },
-            options: { responsive: true, scales: { y: { beginAtZero: true, max: 5 } } }
-        });
+      <div class="card" style="margin-top:16px">
+        <h4 style="margin-top:0">Documentos enviados</h4>
+        <ul class="lista-simples" id="documentList">
+          <li><span>Contrato_Hospital_2023.pdf</span><span class="tag media">Em análise</span></li>
+          <li><span>Prontuario_Anonimizado.docx</span><span class="tag ok">Aprovado</span></li>
+        </ul>
+      </div>
+    </section>
 
-        // Monthly Report Chart
-        new Chart(document.getElementById('monthlyReportChart'), {
-            type: 'line',
-            data: {
-                labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
-                datasets: [{
-                    label: 'Conformidade (%)',
-                    data: [70, 75, 80, 82, 85, 90],
-                    borderColor: '#007bff',
-                    backgroundColor: 'rgba(0,123,255,0.2)',
-                    fill: true,
-                    tension: 0.3
-                }]
-            },
-            options: { responsive: true, scales: { y: { beginAtZero: true, max: 100 } } }
-        });
+    <!-- Compliance -->
+    <section id="compliance">
+      <h2>Compliance jurídico</h2>
+      <p class="sub">Situação do tratamento de dados pessoais e riscos por área.</p>
+      <div class="grade g2">
+        <div class="card">
+          <h4 style="margin-top:0">Tratamento de dados pessoais</h4>
+          <ul class="lista-simples">
+            <li><span>Consentimentos registrados</span><span class="tag ok">Em dia</span></li>
+            <li><span>Prontuários com acesso restrito</span><span class="tag ok">Em dia</span></li>
+            <li><span>Relatório de impacto (RIPD)</span><span class="tag media">Revisar</span></li>
+            <li><span>Aderência geral à LGPD</span><b>95%</b></li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4 style="margin-top:0">Riscos por área (0 a 5)</h4>
+          <canvas id="riskChart" aria-label="Gráfico de riscos por área" height="200"></canvas>
+        </div>
+      </div>
+    </section>
 
-        // Chatbot LGPD
-        const fab = document.getElementById('fabBtn');
-        const chatbot = document.getElementById('chatbot');
-        const closeBtn = document.getElementById('closeChatbot');
-        const chatMessages = document.getElementById('chatMessages');
-        const chatInput = document.getElementById('chatInput');
-        const sendBtn = document.getElementById('sendBtn');
+    <!-- Relatórios -->
+    <section id="relatorios">
+      <h2>Relatórios</h2>
+      <p class="sub">Evolução mensal da conformidade.</p>
+      <div class="card"><canvas id="monthlyReportChart" height="90"></canvas></div>
+    </section>
 
-        fab.addEventListener('click', () => chatbot.style.display = 'block');
-        closeBtn.addEventListener('click', () => chatbot.style.display = 'none');
+    <!-- Alertas -->
+    <section id="alertas">
+      <h2>Alertas</h2>
+      <p class="sub">O que precisa de atenção agora.</p>
+      <div class="alerta alta"><i class="fa-solid fa-triangle-exclamation"></i><div><b>Risco alto:</b> auditoria pendente na segurança jurídica dos contratos hospitalares.</div></div>
+      <div class="alerta media"><i class="fa-solid fa-circle-exclamation"></i><div><b>Atenção:</b> possível exposição de dados em prontuários. Verifique a conformidade com a LGPD.</div></div>
+    </section>
+  </main>
+</div>
 
-        const respostas = {
-            "lgpd": "A LGPD é a Lei Geral de Proteção de Dados, que regula o tratamento de dados pessoais no Brasil.",
-            "anonimizar": "Anonimizar é remover informações que identifiquem o paciente, protegendo sua privacidade.",
-            "consentimento": "O consentimento deve ser livre, informado e explícito antes de tratar dados pessoais.",
-            "dados sensíveis": "Dados de saúde, biometria e religião são considerados sensíveis e exigem proteção reforçada."
-        };
+<button class="fab" id="fabBtn" aria-label="Abrir assistente LGPD"><i class="fa-solid fa-comment-medical"></i></button>
+<div class="chatbot" id="chatbot">
+  <div class="chat-topo"><span><i class="fa-solid fa-robot" style="color:var(--verde)"></i> Assistente LGPD</span><button id="closeChatbot" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
+  <div class="chat-msgs" id="chatMessages"><div class="msg bot">Olá! Pergunte sobre LGPD, anonimização, consentimento ou dados sensíveis.</div></div>
+  <div class="chat-entrada"><input type="text" id="chatInput" placeholder="Digite sua pergunta"><button class="botao" id="sendBtn" aria-label="Enviar"><i class="fa-solid fa-paper-plane"></i></button></div>
+</div>
 
-        sendBtn.addEventListener('click', () => {
-            const pergunta = chatInput.value.trim().toLowerCase();
-            if (!pergunta) return;
-            chatMessages.innerHTML += `<p><strong>Você:</strong> ${pergunta}</p>`;
-            const resposta = Object.keys(respostas).find(k => pergunta.includes(k));
-            chatMessages.innerHTML += `<p><strong>Bot:</strong> ${resposta ? respostas[resposta] : "Desculpe, não entendi. Tente perguntar sobre LGPD, anonimização ou consentimento."}</p>`;
-            chatInput.value = '';
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        });
+<script>
+  const cor = { verde: '#0f6b5c', borda: '#e3e8e6', texto: '#5c6b67', alerta: '#b7791f', risco: '#b42318' };
+  Chart.defaults.font.family = 'Manrope, system-ui, sans-serif';
+  Chart.defaults.color = cor.texto;
 
-        // Análise de documentos com IA (API em /server)
-        const API_URL = 'http://localhost:3000';
-        const corGravidade = { baixa: 'secondary', media: 'warning', alta: 'danger' };
-        const escapar = (t) => String(t).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Gráficos (dados de exemplo)
+  new Chart(document.getElementById('complianceGauge'), {
+    type: 'doughnut',
+    data: { datasets: [{ data: [85, 15], backgroundColor: [cor.verde, cor.borda], borderWidth: 0 }] },
+    options: { cutout: '78%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+  });
 
-        document.getElementById('documentFile').addEventListener('change', async (e) => {
-            const arquivo = e.target.files[0];
-            if (arquivo) document.getElementById('documentText').value = await arquivo.text();
-        });
+  new Chart(document.getElementById('riskChart'), {
+    type: 'bar',
+    data: {
+      labels: ['LGPD', 'Sanitárias', 'Contratuais', 'Cibernéticas'],
+      datasets: [{ data: [3, 2, 4, 5], backgroundColor: [cor.alerta, cor.verde, cor.alerta, cor.risco], borderRadius: 6, barThickness: 22 }]
+    },
+    options: {
+      indexAxis: 'y',
+      plugins: { legend: { display: false } },
+      scales: { x: { min: 0, max: 5, ticks: { stepSize: 1 }, grid: { color: cor.borda } }, y: { grid: { display: false } } }
+    }
+  });
 
-        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const texto = document.getElementById('documentText').value;
-            const descricao = document.getElementById('documentDescription').value;
-            const resultado = document.getElementById('analysisResult');
-            const botao = document.getElementById('submitBtn');
-            if (!texto.trim()) {
-                resultado.innerHTML = '<div class="alert alert-warning">Cole o texto ou selecione um arquivo .txt.</div>';
-                return;
-            }
+  new Chart(document.getElementById('monthlyReportChart'), {
+    type: 'line',
+    data: {
+      labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+      datasets: [{ data: [70, 75, 80, 82, 85, 90], borderColor: cor.verde, backgroundColor: 'rgba(15,107,92,.08)', fill: true, tension: .35, pointRadius: 3 }]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: { y: { min: 60, max: 100, ticks: { callback: v => v + '%' }, grid: { color: cor.borda } }, x: { grid: { display: false } } }
+    }
+  });
 
-            botao.disabled = true;
-            botao.textContent = 'Analisando...';
-            try {
-                const resposta = await fetch(`${API_URL}/analisar`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ texto, descricao })
-                });
-                const dados = await resposta.json();
-                if (!resposta.ok) throw new Error(dados.erro);
-                resultado.innerHTML = renderizarAnalise(dados);
-            } catch (erro) {
-                resultado.innerHTML = `<div class="alert alert-danger">Não foi possível analisar: ${escapar(erro.message)}. A API está rodando? (veja o README)</div>`;
-            } finally {
-                botao.disabled = false;
-                botao.textContent = 'Enviar para Análise';
-            }
-        });
+  // Menu lateral: marca a seção ativa
+  const links = document.querySelectorAll('aside nav a');
+  links.forEach(a => a.addEventListener('click', () => {
+    links.forEach(l => l.classList.remove('ativo'));
+    a.classList.add('ativo');
+  }));
 
-        function renderizarAnalise({ analise, dadosPessoais }) {
-            const pii = Object.entries(dadosPessoais.contagem).map(([tipo, n]) => `${tipo}: ${n}`).join(' · ') || 'nenhum';
-            const riscos = analise.riscos.map((r) => `
-                <li class="list-group-item">
-                    <span class="badge bg-${corGravidade[r.gravidade]} me-2">${escapar(r.gravidade)}</span>
-                    <strong>${escapar(r.categoria.toUpperCase())}</strong> ${escapar(r.descricao)}
-                    ${r.fundamento ? `<div class="small text-muted">${escapar(r.fundamento)}</div>` : ''}
-                </li>`).join('') || '<li class="list-group-item">Nenhum risco relevante encontrado.</li>';
-            const recomendacoes = analise.recomendacoes.map((r) => `<li>${escapar(r)}</li>`).join('');
-            return `
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between">
-                        <span><i class="fas fa-robot"></i> ${escapar(analise.tipoDocumento)}</span>
-                        <span>Score: <strong>${analise.score}</strong>/100</span>
-                    </div>
-                    <div class="card-body">
-                        <p>${escapar(analise.resumo)}</p>
-                        <p class="small text-muted">Dados pessoais pseudonimizados antes do envio: ${escapar(pii)}
-                            ${analise.contemDadosSensiveis ? ' · <span class="text-danger">contém dado sensível (saúde)</span>' : ''}</p>
-                        <h6>Riscos</h6>
-                        <ul class="list-group mb-3">${riscos}</ul>
-                        ${recomendacoes ? `<h6>Recomendações</h6><ul>${recomendacoes}</ul>` : ''}
-                    </div>
-                </div>`;
-        }
-    </script>
+  // Chatbot por palavra-chave
+  const chatbot = document.getElementById('chatbot');
+  const chatMessages = document.getElementById('chatMessages');
+  const chatInput = document.getElementById('chatInput');
+  document.getElementById('fabBtn').addEventListener('click', () => chatbot.classList.toggle('aberto'));
+  document.getElementById('closeChatbot').addEventListener('click', () => chatbot.classList.remove('aberto'));
+
+  const respostas = {
+    'lgpd': 'A LGPD é a Lei Geral de Proteção de Dados (Lei 13.709/2018), que regula o tratamento de dados pessoais no Brasil.',
+    'anonimiz': 'Anonimizar é remover as informações que permitem identificar o paciente, de forma que ele não possa mais ser reidentificado.',
+    'consentimento': 'O consentimento precisa ser livre, informado e inequívoco, para uma finalidade determinada.',
+    'sensíve': 'Dados de saúde, biométricos e genéticos são dados sensíveis e exigem proteção reforçada (art. 11 da LGPD).'
+  };
+
+  function enviarPergunta() {
+    const pergunta = chatInput.value.trim();
+    if (!pergunta) return;
+    adicionarMsg(pergunta, 'eu');
+    const chave = Object.keys(respostas).find(k => pergunta.toLowerCase().includes(k));
+    adicionarMsg(chave ? respostas[chave] : 'Ainda não sei responder isso. Tente perguntar sobre LGPD, anonimização, consentimento ou dados sensíveis.', 'bot');
+    chatInput.value = '';
+  }
+  function adicionarMsg(texto, quem) {
+    const div = document.createElement('div');
+    div.className = `msg ${quem}`;
+    div.textContent = texto;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+  document.getElementById('sendBtn').addEventListener('click', enviarPergunta);
+  chatInput.addEventListener('keydown', e => { if (e.key === 'Enter') enviarPergunta(); });
+
+  // Análise de documentos com IA (API em /server)
+  const API_URL = 'http://localhost:3000';
+  const nomeCategoria = { lgpd: 'LGPD', contratual: 'Contratual', sanitaria: 'Sanitária', seguranca: 'Segurança' };
+  const nomeDado = { CPF: 'CPF', CNPJ: 'CNPJ', CNS: 'Cartão SUS', EMAIL: 'E-mail', TELEFONE: 'Telefone', CEP: 'CEP', DATA_NASCIMENTO: 'Nascimento', NOME: 'Nome' };
+  const escapar = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  document.getElementById('documentFile').addEventListener('change', async e => {
+    const arquivo = e.target.files[0];
+    if (arquivo) document.getElementById('documentText').value = await arquivo.text();
+  });
+
+  document.getElementById('uploadForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const texto = document.getElementById('documentText').value;
+    const descricao = document.getElementById('documentDescription').value;
+    const resultado = document.getElementById('analysisResult');
+    const botao = document.getElementById('submitBtn');
+    if (!texto.trim()) {
+      resultado.innerHTML = '<div class="erro">Cole o texto ou selecione um arquivo .txt.</div>';
+      return;
+    }
+
+    botao.disabled = true;
+    botao.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Analisando...';
+    resultado.innerHTML = '<div class="vazio"><i class="fa-solid fa-spinner fa-spin"></i>Pseudonimizando e enviando para a IA...</div>';
+    try {
+      const resposta = await fetch(`${API_URL}/analisar`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texto, descricao })
+      });
+      const dados = await resposta.json();
+      if (!resposta.ok) throw new Error(dados.erro);
+      resultado.innerHTML = renderizarAnalise(dados);
+    } catch (erro) {
+      resultado.innerHTML = `<div class="erro">Não foi possível analisar: ${escapar(erro.message)}. A API está rodando? Veja o README.</div>`;
+    } finally {
+      botao.disabled = false;
+      botao.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Analisar documento';
+    }
+  });
+
+  function renderizarAnalise({ analise, dadosPessoais }) {
+    const nivel = analise.score >= 80 ? 'ok' : analise.score >= 50 ? 'media' : 'alta';
+    const corScore = { ok: 'var(--verde)', media: 'var(--alerta)', alta: 'var(--risco)' }[nivel];
+    const pii = Object.entries(dadosPessoais.contagem)
+      .map(([tipo, n]) => `<span>${escapar(nomeDado[tipo] || tipo)}: ${n}</span>`).join('');
+    const riscos = analise.riscos.map(r => `
+      <div class="risco ${escapar(r.gravidade)}">
+        <div class="cab"><span class="tag ${escapar(r.gravidade)}">${escapar(r.gravidade)}</span>${escapar(nomeCategoria[r.categoria] || r.categoria)}</div>
+        <div>${escapar(r.descricao)}</div>
+        ${r.fundamento ? `<div class="fund">${escapar(r.fundamento)}</div>` : ''}
+      </div>`).join('') || '<p class="sub">Nenhum risco relevante encontrado.</p>';
+    const recs = analise.recomendacoes.map(r => `<li>${escapar(r)}</li>`).join('');
+    return `
+      <div class="res-topo">
+        <div>
+          <div class="cliente">Resultado da análise</div>
+          <h3>${escapar(analise.tipoDocumento)}</h3>
+          ${analise.contemDadosSensiveis ? '<span class="tag alta">Contém dado sensível</span>' : ''}
+        </div>
+        <div class="res-score"><b style="color:${corScore}">${analise.score}</b><span class="sub">/100</span></div>
+      </div>
+      <p>${escapar(analise.resumo)}</p>
+      ${pii ? `<div class="pii" title="Dados pseudonimizados antes do envio">${pii}</div>` : '<div class="pii"><span>Nenhum dado pessoal encontrado</span></div>'}
+      <h4>Riscos</h4>${riscos}
+      ${recs ? `<h4>Recomendações</h4><ul class="recs">${recs}</ul>` : ''}`;
+  }
+</script>
 </body>
 </html>
