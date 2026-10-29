@@ -1,0 +1,11 @@
+HOSPITAL SÃO LUCAS - EVOLUÇÃO CLÍNICA (documento fictício para testes)
+
+Paciente: Roberto Almeida Costa
+Data de nascimento: 04/09/1967
+CPF: 529.982.247-25
+Cartão SUS: 898 0012 3456 7890
+Telefone: (51) 99876-5432
+
+Paciente deu entrada com dispneia. Hipótese diagnóstica: DPOC exacerbada (CID J44.1).
+Solicitados exames laboratoriais e raio-X de tórax.
+Cópia desta evolução enviada por WhatsApp para o filho do paciente a pedido da recepção.

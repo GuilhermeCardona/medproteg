@@ -1,0 +1,22 @@
+[
+  {
+    "arquivo": "01-prontuario.txt",
+    "contemDadosSensiveis": true,
+    "deveTerRiscoCom": ["lgpd"],
+    "gravidadeMinima": "alta",
+    "scoreMaximo": 60
+  },
+  {
+    "arquivo": "02-contrato-laboratorio.txt",
+    "contemDadosSensiveis": true,
+    "deveTerRiscoCom": ["lgpd"],
+    "gravidadeMinima": "alta",
+    "scoreMaximo": 60
+  },
+  {
+    "arquivo": "03-aviso-cantina.txt",
+    "contemDadosSensiveis": false,
+    "deveTerRiscoCom": [],
+    "scoreMinimo": 80
+  }
+]

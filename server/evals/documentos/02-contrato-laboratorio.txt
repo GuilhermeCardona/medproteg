@@ -1,0 +1,9 @@
+CONTRATO DE PRESTAÇÃO DE SERVIÇOS LABORATORIAIS (documento fictício para testes)
+
+CONTRATANTE: Hospital São Lucas, CNPJ 12.345.678/0001-95.
+CONTRATADA: LabVida Análises Clínicas Ltda.
+
+Cláusula 1ª - A CONTRATADA realizará exames laboratoriais dos pacientes encaminhados pela CONTRATANTE.
+Cláusula 2ª - A CONTRATANTE enviará à CONTRATADA nome completo, CPF, endereço e histórico clínico dos pacientes.
+Cláusula 3ª - A CONTRATADA poderá compartilhar os resultados com parceiros comerciais para fins de pesquisa de mercado.
+Cláusula 4ª - O contrato vigora por 24 meses.
